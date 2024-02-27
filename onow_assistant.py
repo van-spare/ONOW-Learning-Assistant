@@ -7,6 +7,10 @@ import socket
 import asyncio
 from IPython.display import display, HTML
 import streamlit as st
+from dotenv import load_dotenv
+
+load_dotenv()
+openAISecret = os.getenv("OPENAI_API_KEY")
 # import utils
 # from tools import topicList, iscorrect
 
@@ -26,7 +30,7 @@ with st.expander("See Instructions"):
             "**Step 4:** Start the conversation by sending simple 'Hi' or anything.")
 # thread, threadid, assistant, assistantid = None, None, None, None
 # Initialize client
-openAISecret = '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'
+
 client = OpenAI(
     api_key = openAISecret
 )
