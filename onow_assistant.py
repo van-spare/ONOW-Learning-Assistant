@@ -30,7 +30,7 @@ with st.expander("See Instructions"):
             "**Step 4:** Start the conversation by sending simple 'Hi' or anything.")
 # thread, threadid, assistant, assistantid = None, None, None, None
 # Initialize client
-
+# topiclist = []
 client = OpenAI(
     api_key = openAISecret
 )
@@ -41,6 +41,7 @@ import json
 def is_correct(val):
     val = 'true' in val
     global iscorrect
+    st.session_state['iscorrect'] = val
     iscorrect=val
     return ""
 
@@ -78,10 +79,9 @@ def topics(topics, append=False):
     else:
         # global topicList
         topicList = json.loads(topics)['topiclist']
-        st.session_state['topiclist'] = json.loads(topics)['topiclist']
-    # topicList = st.session_state['topiclist']
-    print("TopicList after:", topicList)
-    # st.session_state['topiclist'] = topicList
+        # st.session_state['topiclist'] = json.loads(topics)['topiclist']
+    if len(st.session_state['topiclist']) == 0:
+        st.session_state['topiclist'] = topicList
     return ""
 
 topics_function =    {
@@ -162,7 +162,6 @@ def create_assistant(st, client, info, selected_course, files):
     except Exception as e:
         print(e)
     
-
 ## Assistant querying function
 def query_assistant(client, query, threadid, assistantid):
     message = client.beta.threads.messages.create(
@@ -170,7 +169,6 @@ def query_assistant(client, query, threadid, assistantid):
         role="user",
         content=query
     )
-
 
     #run message
     run = client.beta.threads.runs.create(
@@ -263,6 +261,8 @@ if 'topic_count' not in st.session_state:
     st.session_state['topic_count'] = 0
 if 'selected_course' not in st.session_state:
     st.session_state['selected_course'] = None
+if 'iscorrect' not in st.session_state:
+    st.session_state['iscorrect'] = None
 
 with st.sidebar:
     # User business
@@ -313,6 +313,7 @@ if selected_course != st.session_state.selected_course:
     st.session_state['topic_count'] = 0
     st.session_state['topic_quizz_count'] = 0
     st.session_state['score'] = 0
+    st.session_state['iscorrect'] = None
 
 # Initialing assistant
 #create thread
@@ -337,6 +338,8 @@ if st.session_state['create_assistant'] and not st.session_state['assistant_crea
 
         #this query will trigger an openai assistants function call that sets the global variable "topicList". I enabled this in the tooo
         assistant_response = query_assistant(client=client,query=initial_question, threadid=st.session_state['thread_id'], assistantid=st.session_state['assistant_id'])
+        # topiclist = assistant_response
+        # print("Tpics divided:",topiclist)
         st.session_state['doc_messages'].append({"role": "assistant", "content": assistant_response})
 # assistantid = st.session_state['assistant_id']
 # st.info(f'Assistant successfully created with id: {assistantid}')
@@ -346,29 +349,35 @@ for message in st.session_state['doc_messages']:
     with st.chat_message(message['role']):
         st.write(message['content'])
 
+topiclist = st.session_state['topiclist']
 # topiclist = topicList
 if user_query := st.chat_input("Enter your query here"):
     # global topicList
-    print()
-    topiclist = st.session_state['topiclist']
-    print('Topic list:', topiclist)
+    # print()
+    print('\nTopic list for course:', topiclist)
     # Append user message
-    print("Topic count:", st.session_state['topic_count'])
+    
     st.session_state['doc_messages'].append({"role": "user", "content": user_query})
     with st.chat_message("user"):
         st.markdown(user_query)
 
     # Attempt to start learning topics one by one
     if st.session_state['learn']:
+        print("You are learning...")
+        print("Topic count:", st.session_state['topic_count'])
         if user_query.lower() in ['hi','start','continue']:
+            print("You go to next topic ...")
+            
             if st.session_state['topic_count'] >= len(topiclist):
-                print("HERE 1")
+                print("You have learned all ...")
+                # print("HERE 1")
                 assistant_response = f"You have learned all the topics about {selected_course}"
                 st.session_state['doc_messages'].append({"role": "assistant", "content": assistant_response})
                 with st.chat_message("assistant"):
                     st.markdown(assistant_response)
             else:
-                print("HERE 2")
+                print("Next topic ... ")
+                print("Topic name:", topiclist[st.session_state['topic_count']])
                 query = "Teach me about " + topiclist[st.session_state['topic_count']] + " in simple words, connecting it to my business. (off topic allowed)"
                 with st.spinner('Generating response...'):
                     assistant_response = f"\nTopic {st.session_state['topic_count'] + 1}: {topiclist[st.session_state['topic_count']]}\n\n" + query_assistant(client=client,query=query, threadid=st.session_state['thread_id'], assistantid=st.session_state['assistant_id'])
@@ -383,7 +392,7 @@ if user_query := st.chat_input("Enter your query here"):
                     st.markdown(assistant_response)
 
         # staying at the current topic
-        if user_query.lower() != "continue":
+        elif user_query.lower() != "continue":
             print("HERE 3")
             with st.spinner('Generating response...'):
                 assistant_response = "\n" + query_assistant(client=client,query=user_query, threadid=st.session_state['thread_id'], assistantid=st.session_state['assistant_id'])
@@ -397,31 +406,42 @@ if user_query := st.chat_input("Enter your query here"):
             with st.chat_message("assistant"):
                 st.markdown(assistant_response)
     elif st.session_state['quiz']:
+        print("Quizz")
         print("Quizz count:", st.session_state['topic_quizz_count'])
+        print("Quizz topic:", topiclist[st.session_state['topic_quizz_count']])
 
         ## checking user answer
-        if user_query.lower() in ['a','b','c','d'] or user_query.lower() != 'continue':
-            query = f"Is {user_query} the correct answer? If not, tell me what the correct answer is and explain why.D"
-            assistant_response = query_assistant(client=client,query=query,threadid=st.session_state['thread_id'],assistantid=st.session_state['assistant_id'])
-            st.session_state['doc_messages'].append({"role": "assistant", "content": assistant_response})
-            with st.chat_message("assistant"):
-                st.markdown(assistant_response)
-            st.session_state['topic_quizz_count'] += 1
-            if(iscorrect):
+        if user_query.lower() in ['a','b','c','d']:
+
+            print("You are answering the previous question...")
+            query = f"Is {user_query} the correct answer? If not, tell me what the correct answer is and explain why."
+            with st.spinner('Generating response...'):
+                assistant_response = query_assistant(client=client,query=query,threadid=st.session_state['thread_id'],assistantid=st.session_state['assistant_id'])
+                st.session_state['doc_messages'].append({"role": "assistant", "content": assistant_response})
+                with st.chat_message("assistant"):
+                    st.markdown(assistant_response)
+                st.session_state['topic_quizz_count'] += 1
+
+            if(st.session_state['iscorrect']):
                 st.session_state['score'] +=1
 
         ## end of topic
-        elif st.session_state['topic_quizz_count'] >= len(topiclist):
-            assistant_response = f"You've finished the course with a score of {st.session_state['score']}! Congratulations, you are now proficient in {course}!"
+        if st.session_state['topic_quizz_count'] >= len(topiclist):
+            print("You finished the quizz.")
+            assistant_response = f"You've finished the course with a score of {st.session_state['score']}! Congratulations, you are now proficient in {selected_course}!"
             st.session_state['doc_messages'].append({"role": "assistant", "content": assistant_response})
             with st.chat_message("assistant"):
                 st.markdown(assistant_response)
         else:
             ## generating next quizz
-            query = f"Give me a multiple choice quiz question about {topiclist[st.session_state['topic_quizz_count']]}. DO NOT include anything besides the question, and 4 answer choices, labeled A-D."
-            assistant_response = query_assistant(client=client,query=query,threadid=st.session_state['thread_id'],assistantid=st.session_state['assistant_id'])
-            assistant_response += "\nWhich is the correct answer: A, B, C, or D?"
-            st.session_state['doc_messages'].append({"role": "assistant", "content": assistant_response})
-            with st.chat_message("assistant"):
-                st.markdown(assistant_response)
+            print("Not finished yet, next quizz")
+            print("Quizz topic:", topiclist[st.session_state['topic_quizz_count']])
+            query = f"Give me a multiple choice quiz question about {topiclist[st.session_state['topic_quizz_count']]} from the files uploaded. DO NOT include anything besides the question, and 4 answer choices, labeled A-D each separated by two lines. Do not tell me the answer."
+            with st.spinner('Generating next quiz...'):
+                assistant_response = f"Quiz for topic: {st.session_state['topic_quizz_count'] + 1} {topiclist[st.session_state['topic_quizz_count']]} \n\n"
+                query_ = query_assistant(client=client,query=query,threadid=st.session_state['thread_id'],assistantid=st.session_state['assistant_id'])
+                assistant_response = assistant_response + query_ + "\n\nWhich is the correct answer: A, B, C, or D?"
+                st.session_state['doc_messages'].append({"role": "assistant", "content": assistant_response})
+                with st.chat_message("assistant"):
+                    st.markdown(assistant_response)
         
