@@ -109,6 +109,7 @@ topics_function =    {
 }
 }
 
+
 def add_files(client, selected_course, uploaded_files = []):
     files = []
     if(selected_course=="Budgeting"):
@@ -145,6 +146,9 @@ def add_files(client, selected_course, uploaded_files = []):
         files.append(file.id)
     else:
         # uploaded_files = st.file_uploader("Upload Budgeting Files", type=["pdf"], accept_multiple_files=True)
+        print("Here,,")
+        uploaded_files = st.session_state['uploaded_files']
+        print("Uploaded files:", uploaded_files)
         for uploaded_file in uploaded_files:
             # Save each uploaded file
             file = client.files.create(
@@ -152,7 +156,8 @@ def add_files(client, selected_course, uploaded_files = []):
                 purpose='assistants'
             )
             files.append(file.id)
-
+            print("files files ",files)
+    print("Files:",files)
     return files
 
 def create_assistant(st, client, info, selected_course, files):
@@ -277,7 +282,8 @@ if 'iscorrect' not in st.session_state:
     st.session_state['iscorrect'] = None
 if 'selection_method' not in st.session_state:
     st.session_state['selection_method'] = None
-
+if 'uploaded_files' not in st.session_state:
+    st.session_state['uploaded_files'] = []
 # selected_course = None
 with st.sidebar:
     # User business
@@ -291,6 +297,7 @@ with st.sidebar:
     if selected_method == 'Upload files':
         uploaded_files = st.file_uploader("Upload a file", type=["pdf"],accept_multiple_files=True)
         selected_course = st.text_input("Enter the course name")
+        st.session_state['uploaded_files'] = uploaded_files
 
     # Learning topic
     else:
@@ -304,17 +311,18 @@ with st.sidebar:
         if selected_method == 'Upload files':
             # print("HERE")
             # print(not uploaded_files)
-            if not uploaded_files and selected_course == "":
+            if not st.session_state['uploaded_files'] and selected_course == "":
                 # Only custom name is provided
                 st.warning("Please upload files and enter custom name for the file as a course.")
-            elif not uploaded_files and selected_course != "":
+            elif not st.session_state['uploaded_files'] and selected_course != "":
                 # Only custom name is provided
                 st.warning("Please upload files.")
 
-            elif uploaded_files and selected_course == "":
+            elif st.session_state['uploaded_files'] and selected_course == "":
                 # Only file is uploaded
                 st.warning("Please enter a custom name for the file as a course.")
             else:
+                print("Uploaded_files:", st.session_state['uploaded_files'])
                 st.session_state['create_assistant'] = True
         else:
             st.session_state['create_assistant'] = True
@@ -363,13 +371,14 @@ thread = client.beta.threads.create()
 # threadid = thread.id
 st.session_state['thread_id'] = thread.id
 
-files = []
+# files = []
 # assistantid = None
 # Adding files to client
 if st.session_state['create_assistant'] and not st.session_state['assistant_created']:
     with st.spinner("Creating your learning assistant for course selected..."):
 
         files = add_files(client, selected_course)
+        print("Added files:", files)
         assistant = create_assistant(st=st,client=client,info=info,selected_course=selected_course,files=files)
         assistantid = assistant.id
         st.session_state['assistant_id'] = assistantid
