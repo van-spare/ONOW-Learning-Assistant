@@ -314,6 +314,8 @@ with st.sidebar:
             elif uploaded_files and selected_course == "":
                 # Only file is uploaded
                 st.warning("Please enter a custom name for the file as a course.")
+            else:
+                st.session_state['create_assistant'] = True
         else:
             st.session_state['create_assistant'] = True
     
