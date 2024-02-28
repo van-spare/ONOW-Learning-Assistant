@@ -20,7 +20,9 @@ with st.expander("See Instructions"):
     # simple_llm = llmAgent.simple_llm()
     st.info("**Step 1:**\n\n"\
             "Enter your business info\n- Enter your business information to get personalized lessons for your business specific.\n\n"\
-            "Which course you do want to learn?\n- Select the course you want to learn.\n\n"\
+            "What do you want to do?\n- Upload your files \n- Use existing files\n\n"\
+            "If you choose to upload your files,\n - Upload your files\n - Give course name\n\n"
+            "If you want to learn from existing courses,\n - Which course you do want to learn?\n\t- Select the course you want to learn.\n\n"\
             "Are you a beginner?\n- Select your level on the course. Depending on your choice, the course topics will change.\n\n"\
             "**Step 2:**\n\n"
             "Create Learning Assistant: Click this to initialize your learning assistant. As assistant is initialized, you will see the topics you will learn.\n\n"\
@@ -276,14 +278,16 @@ if 'iscorrect' not in st.session_state:
 if 'selection_method' not in st.session_state:
     st.session_state['selection_method'] = None
 
+# selected_course = None
 with st.sidebar:
     # User business
     info = st.text_area("Enter your business info:", value="Eg. I am a farmer who grows mostly corn and wheat. I have animals including cows, pigs, and chickens.")
 
     # ask user to select method
     selected_method = st.selectbox("What do you wanna do?", ['Upload files','Use existing files'])
+    st.markdown("<hr>", unsafe_allow_html=True)
     st.session_state['selection_method'] = selected_method
-
+    
     if selected_method == 'Upload files':
         uploaded_files = st.file_uploader("Upload a file", type=["pdf"],accept_multiple_files=True)
         selected_course = st.text_input("Enter the course name")
@@ -293,17 +297,27 @@ with st.sidebar:
         courses = ["Budgeting", "Saving", "Borrowing", "Export Markets"]
         selected_course = st.selectbox("Which course do you want to learn?", courses)
     
-
+    st.markdown("<hr>", unsafe_allow_html=True)
     isBeginner = st.radio("Are you a beginner?", ["Yes", "No"])
 
     if st.button("Create Learning Assistant"):
-        if selected_method == 'Upload files' and selected_course is None:
-            st.error("Please give a name to your course.")
-        elif selected_method == 'Upload files' and uploaded_files is None:
-            st.error("Please upload files.")
+        if selected_method == 'Upload files':
+            # print("HERE")
+            # print(not uploaded_files)
+            if not uploaded_files and selected_course == "":
+                # Only custom name is provided
+                st.warning("Please upload files and enter custom name for the file as a course.")
+            elif not uploaded_files and selected_course != "":
+                # Only custom name is provided
+                st.warning("Please upload files.")
+
+            elif uploaded_files and selected_course == "":
+                # Only file is uploaded
+                st.warning("Please enter a custom name for the file as a course.")
         else:
             st.session_state['create_assistant'] = True
     
+
     if st.button("Start Learning"):
         st.session_state['learn'] = True
         st.session_state['quiz'] = False
