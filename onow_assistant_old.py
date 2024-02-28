@@ -107,7 +107,7 @@ topics_function =    {
 }
 }
 
-def add_files(client, selected_course, uploaded_files = []):
+def add_files(client, selected_course):
     files = []
     if(selected_course=="Budgeting"):
         file = client.files.create(
@@ -141,16 +141,6 @@ def add_files(client, selected_course, uploaded_files = []):
         purpose='assistants'
         )
         files.append(file.id)
-    else:
-        # uploaded_files = st.file_uploader("Upload Budgeting Files", type=["pdf"], accept_multiple_files=True)
-        for uploaded_file in uploaded_files:
-            # Save each uploaded file
-            file = client.files.create(
-                file=uploaded_file,
-                purpose='assistants'
-            )
-            files.append(file.id)
-
     return files
 
 def create_assistant(st, client, info, selected_course, files):
@@ -273,36 +263,20 @@ if 'selected_course' not in st.session_state:
     st.session_state['selected_course'] = None
 if 'iscorrect' not in st.session_state:
     st.session_state['iscorrect'] = None
-if 'selection_method' not in st.session_state:
-    st.session_state['selection_method'] = None
 
 with st.sidebar:
     # User business
     info = st.text_area("Enter your business info:", value="Eg. I am a farmer who grows mostly corn and wheat. I have animals including cows, pigs, and chickens.")
 
-    # ask user to select method
-    selected_method = st.selectbox("What do you wanna do?", ['Upload files','Use existing files'])
-    st.session_state['selection_method'] = selected_method
-
-    if selected_method == 'Upload files':
-        uploaded_files = st.file_uploader("Upload a file", type=["pdf"],accept_multiple_files=True)
-        selected_course = st.text_input("Enter the course name")
-
     # Learning topic
-    else:
-        courses = ["Budgeting", "Saving", "Borrowing", "Export Markets"]
-        selected_course = st.selectbox("Which course do you want to learn?", courses)
+    courses = ["Budgeting", "Saving", "Borrowing", "Export Markets"]
+    selected_course = st.selectbox("Which course do you want to learn?", courses)
     
 
     isBeginner = st.radio("Are you a beginner?", ["Yes", "No"])
 
     if st.button("Create Learning Assistant"):
-        if selected_method == 'Upload files' and selected_course is None:
-            st.error("Please give a name to your course.")
-        elif selected_method == 'Upload files' and uploaded_files is None:
-            st.error("Please upload files.")
-        else:
-            st.session_state['create_assistant'] = True
+        st.session_state['create_assistant'] = True
     
     if st.button("Start Learning"):
         st.session_state['learn'] = True
