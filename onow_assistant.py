@@ -146,9 +146,9 @@ def add_files(client, selected_course, uploaded_files = []):
         files.append(file.id)
     else:
         # uploaded_files = st.file_uploader("Upload Budgeting Files", type=["pdf"], accept_multiple_files=True)
-        print("Here,,")
+        # print("Here,,")
         uploaded_files = st.session_state['uploaded_files']
-        print("Uploaded files:", uploaded_files)
+        # print("Uploaded files:", uploaded_files)
         for uploaded_file in uploaded_files:
             # Save each uploaded file
             file = client.files.create(
@@ -156,8 +156,8 @@ def add_files(client, selected_course, uploaded_files = []):
                 purpose='assistants'
             )
             files.append(file.id)
-            print("files files ",files)
-    print("Files:",files)
+            # print("files files ",files)
+    # print("Files:",files)
     return files
 
 def create_assistant(st, client, info, selected_course, files):
@@ -364,6 +364,7 @@ if selected_course != st.session_state.selected_course:
     st.session_state['topic_quizz_count'] = 0
     st.session_state['score'] = 0
     st.session_state['iscorrect'] = None
+    st.session_state['uploaded_files'] = []
 
 # Initialing assistant
 #create thread
