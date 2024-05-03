@@ -381,6 +381,7 @@ if st.session_state['create_assistant'] and not st.session_state['assistant_crea
         files = add_files(client, selected_course)
         print("Added files:", files)
         assistant = create_assistant(st=st,client=client,info=info,selected_course=selected_course,files=files)
+        print("Assistant:",assistant)
         assistantid = assistant.id
         st.session_state['assistant_id'] = assistantid
         
